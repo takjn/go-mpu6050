@@ -55,8 +55,6 @@ func main() {
 			defer conn.Close()
 
 			// main loop
-			lastSend := time.Now()
-			var maxGx, maxGy, maxGz int32
 			for {
 				data := make([]byte, 6)
 				if err := d.ReadReg(accelRegister, data); err != nil {
@@ -64,38 +62,23 @@ func main() {
 				}
 
 				// ref. https://github.com/tinygo-org/drivers/tree/master/mpu6050
-				microGx := int32(int16((uint16(data[0])<<8)|uint16(data[1]))) * 15625 / 256
-				microGy := int32(int16((uint16(data[2])<<8)|uint16(data[3]))) * 15625 / 256
-				microGz := int32(int16((uint16(data[4])<<8)|uint16(data[5]))) * 15625 / 256
+				x := int32(int16((uint16(data[0])<<8)|uint16(data[1]))) * 15625 / 256
+				y := int32(int16((uint16(data[2])<<8)|uint16(data[3]))) * 15625 / 256
+				z := int32(int16((uint16(data[4])<<8)|uint16(data[5]))) * 15625 / 256
 
-				if abs(microGx) > abs(maxGx) {
-					maxGx = microGx
+				gx := float32(x) / 1000
+				gy := float32(y) / 1000
+				gz := float32(z) / 1000
+
+				s := fmt.Sprintf("a,%.2f,%.2f,%.2f\n", gx, gy, gz)
+
+				_, err = conn.Write([]byte(s))
+				if err != nil {
+					log.Printf("error: %v\n", err)
+					return
 				}
-				if abs(microGy) > abs(maxGy) {
-					maxGy = microGy
-				}
-				if abs(microGz) > abs(maxGz) {
-					maxGz = microGz
-				}
 
-				if time.Now().Sub(lastSend) > 100*time.Millisecond {
-					gx := float32(maxGx) / 1000
-					gy := float32(maxGy) / 1000
-					gz := float32(maxGz) / 1000
-
-					s := fmt.Sprintf("a,%.2f,%.2f,%.2f\n", gx, gy, gz)
-
-					_, err = conn.Write([]byte(s))
-					if err != nil {
-						log.Printf("error: %v\n", err)
-						return
-					}
-
-					maxGx = 0
-					maxGy = 0
-					maxGz = 0
-					lastSend = time.Now()
-				}
+				time.Sleep(100 * time.Millisecond)
 			}
 
 		}()
