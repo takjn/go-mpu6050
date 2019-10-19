@@ -12,20 +12,13 @@ import (
 )
 
 const (
-	devFile       = "/dev/i2c-2"
+	devFile       = "/dev/i2c-4"
 	address       = 0x68
 	accelRegister = 0x3B
 )
 
 // ref. https://godoc.org/golang.org/x/exp/io/i2c
 // ref. https://github.com/tinygo-org/drivers/tree/master/mpu6050
-
-func abs(val int32) int32 {
-	if val < 0 {
-		return -val
-	}
-	return val
-}
 
 func main() {
 	// create a unix domain socket
